@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mets:mets xmlns:mets="http://www.loc.gov/METS/">
+  <mets:structMap TYPE="logical">
+    <mets:div TYPE="fonds" LABEL="Universidad de Costa Rica (UCR)">
+      <mets:div TYPE="function" LABEL="Acción Social (AS)">
+        <mets:div TYPE="series" LABEL="S37">
+          <mets:div TYPE="file" LABEL="TC739 — Expediente TC739 (ejemplo)">
+            <mets:div TYPE="item" LABEL="Circular VAS-12-2024.pdf">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S37/TC739/Circular VAS-12-2024.pdf"/>
+            </mets:div>
+            <mets:div TYPE="item" LABEL="EH-244-2026.pdf">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S37/TC739/EH-244-2026.pdf"/>
+            </mets:div>
+            <mets:div TYPE="item" LABEL="Resolución VAS-9-2020.pdf">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S37/TC739/Resolución VAS-9-2020.pdf"/>
+            </mets:div>
+            <mets:div TYPE="item" LABEL="VAS-3593-2022.pdf">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S37/TC739/VAS-3593-2022.pdf"/>
+            </mets:div>
+            <mets:div TYPE="item" LABEL="TC739-ficha-xades.xml">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S37/TC739/TC739-ficha-xades.xml"/>
+            </mets:div>
+          </mets:div>
+        </mets:div>
+      </mets:div>
+    </mets:div>
+  </mets:structMap>
+</mets:mets>

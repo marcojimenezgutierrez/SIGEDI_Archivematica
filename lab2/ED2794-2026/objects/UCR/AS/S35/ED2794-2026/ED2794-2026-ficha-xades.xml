@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+              xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"
+              Id="SIG-ED2794-2026">
+  <ds:SignedInfo>
+    <ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+    <ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+    <ds:Reference URI="#DATA-ED2794-2026">
+      <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+      <ds:DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</ds:DigestValue>
+    </ds:Reference>
+  </ds:SignedInfo>
+  <ds:SignatureValue>BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB</ds:SignatureValue>
+  <ds:KeyInfo>
+    <ds:X509Data>
+      <ds:X509Certificate>MIIF...SIMULADO...==</ds:X509Certificate>
+    </ds:X509Data>
+  </ds:KeyInfo>
+  <ds:Object Id="OBJ-ED2794-2026">
+    <xades:QualifyingProperties Target="#SIG-ED2794-2026">
+      <xades:SignedProperties Id="SIGNEDPROPS-ED2794-2026">
+        <xades:SignedSignatureProperties>
+          <xades:SigningTime>2026-03-06T05:13:22</xades:SigningTime>
+          <xades:SignerRole>
+            <xades:ClaimedRoles>
+              <xades:ClaimedRole>Unidad productora (simulada)</xades:ClaimedRole>
+            </xades:ClaimedRoles>
+          </xades:SignerRole>
+        </xades:SignedSignatureProperties>
+      </xades:SignedProperties>
+    </xades:QualifyingProperties>
+    <package:PackageInfo xmlns:package="https://example.org/sigedi/package">
+      <package:Identifier>ED2794-2026</package:Identifier>
+      <package:Title>Formación Archivística Continua</package:Title>
+      <package:Producer>Universidad de Costa Rica</package:Producer>
+      <package:Generated>2026-03-06T05:13:22</package:Generated>
+      <package:Note>Ejemplo didáctico; NO es una firma válida.</package:Note>
+    </package:PackageInfo>
+  </ds:Object>
+</ds:Signature>

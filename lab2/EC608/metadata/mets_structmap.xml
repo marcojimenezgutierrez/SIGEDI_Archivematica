@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mets:mets xmlns:mets="http://www.loc.gov/METS/">
+  <mets:structMap TYPE="logical">
+    <mets:div TYPE="fonds" LABEL="Universidad de Costa Rica (UCR)">
+      <mets:div TYPE="function" LABEL="Acción Social (AS)">
+        <mets:div TYPE="series" LABEL="S36">
+          <mets:div TYPE="file" LABEL="EC608 — Expediente EC608 (ejemplo)">
+            <mets:div TYPE="item" LABEL="EH-220-2024.pdf">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S36/EC608/EH-220-2024.pdf"/>
+            </mets:div>
+            <mets:div TYPE="item" LABEL="EH-229-2024.pdf">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S36/EC608/EH-229-2024.pdf"/>
+            </mets:div>
+            <mets:div TYPE="item" LABEL="VAS-718-2024.pdf">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S36/EC608/VAS-718-2024.pdf"/>
+            </mets:div>
+            <mets:div TYPE="item" LABEL="VAS-5950-2024.pdf">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S36/EC608/VAS-5950-2024.pdf"/>
+            </mets:div>
+            <mets:div TYPE="item" LABEL="EC608-ficha-xades.xml">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S36/EC608/EC608-ficha-xades.xml"/>
+            </mets:div>
+          </mets:div>
+        </mets:div>
+      </mets:div>
+    </mets:div>
+  </mets:structMap>
+</mets:mets>

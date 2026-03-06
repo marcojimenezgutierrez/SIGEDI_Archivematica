@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mets:mets xmlns:mets="http://www.loc.gov/METS/">
+  <mets:structMap TYPE="logical">
+    <mets:div TYPE="fonds" LABEL="Universidad de Costa Rica (UCR)">
+      <mets:div TYPE="function" LABEL="Acción Social (AS)">
+        <mets:div TYPE="series" LABEL="S35">
+          <mets:div TYPE="file" LABEL="ED2794-2026 — Formación Archivística Continua">
+            <mets:div TYPE="item" LABEL="EH-15-2026.pdf">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S35/ED2794-2026/EH-15-2026.pdf"/>
+            </mets:div>
+            <mets:div TYPE="item" LABEL="EH-151-2026.pdf">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S35/ED2794-2026/EH-151-2026.pdf"/>
+            </mets:div>
+            <mets:div TYPE="item" LABEL="EH-156-2026.pdf">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S35/ED2794-2026/EH-156-2026.pdf"/>
+            </mets:div>
+            <mets:div TYPE="item" LABEL="VAS-5565-2025.pdf">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S35/ED2794-2026/VAS-5565-2025.pdf"/>
+            </mets:div>
+            <mets:div TYPE="item" LABEL="ED2794-2026-ficha-xades.xml">
+              <mets:fptr CONTENTIDS="objects/UCR/AS/S35/ED2794-2026/ED2794-2026-ficha-xades.xml"/>
+            </mets:div>
+          </mets:div>
+        </mets:div>
+      </mets:div>
+    </mets:div>
+  </mets:structMap>
+</mets:mets>
