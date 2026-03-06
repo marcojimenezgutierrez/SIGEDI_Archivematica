@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ead PUBLIC "+//ISBN 1-931666-00-8//DTD ead.dtd (Encoded Archival Description (EAD) Version 2002)//EN" "ead.dtd">
+<ead>
+  <eadheader findaidstatus="edited">
+    <eadid>EC608</eadid>
+    <filedesc>
+      <titlestmt>
+        <titleproper>Expediente EC608 (ejemplo)</titleproper>
+        <author>Laboratorio Archivematica (UCR)</author>
+      </titlestmt>
+      <publicationstmt>
+        <publisher>Universidad de Costa Rica</publisher>
+        <date>2026-03-06</date>
+      </publicationstmt>
+    </filedesc>
+  </eadheader>
+
+  <archdesc level="file">
+    <did>
+      <repository>
+        <corpname>Universidad de Costa Rica</corpname>
+      </repository>
+      <unitid>EC608</unitid>
+      <unittitle>Expediente EC608 (ejemplo)</unittitle>
+      <unitdate normal="2026-03-06">2026-03-06</unitdate>
+      <origination label="Creator">
+        <corpname>Acción Social (AS)</corpname>
+      </origination>
+      <physdesc>
+        <extent>5 objetos digitales</extent>
+      </physdesc>
+    </did>
+
+    <scopecontent>
+      <p>Expediente de ejemplo para laboratorio. Clasificación: UCR / AS / S36 / EC608.</p>
+      <p>Nota: Este EAD 2002 se incluye para importación manual en AtoM.</p>
+    </scopecontent>
+
+    <dsc>
+      <c level="item" id="EC608-item-1">
+        <did>
+          <unitid>EH-220-2024.pdf</unitid>
+          <unittitle>EH-220-2024.pdf</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+      <c level="item" id="EC608-item-2">
+        <did>
+          <unitid>EH-229-2024.pdf</unitid>
+          <unittitle>EH-229-2024.pdf</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+      <c level="item" id="EC608-item-3">
+        <did>
+          <unitid>VAS-718-2024.pdf</unitid>
+          <unittitle>VAS-718-2024.pdf</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+      <c level="item" id="EC608-item-4">
+        <did>
+          <unitid>VAS-5950-2024.pdf</unitid>
+          <unittitle>VAS-5950-2024.pdf</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+      <c level="item" id="EC608-item-5">
+        <did>
+          <unitid>EC608-ficha-xades.xml</unitid>
+          <unittitle>EC608-ficha-xades.xml</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+    </dsc>
+  </archdesc>
+</ead>

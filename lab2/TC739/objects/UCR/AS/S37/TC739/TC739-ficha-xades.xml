@@ -20,12 +20,7 @@
     <xades:QualifyingProperties Target="#SIG-TC739">
       <xades:SignedProperties Id="SIGNEDPROPS-TC739">
         <xades:SignedSignatureProperties>
-          <xades:SigningTime>2026-03-06T05:13:22</xades:SigningTime>
-          <xades:SignerRole>
-            <xades:ClaimedRoles>
-              <xades:ClaimedRole>Unidad productora (simulada)</xades:ClaimedRole>
-            </xades:ClaimedRoles>
-          </xades:SignerRole>
+          <xades:SigningTime>2026-03-06T15:16:35</xades:SigningTime>
         </xades:SignedSignatureProperties>
       </xades:SignedProperties>
     </xades:QualifyingProperties>
@@ -33,7 +28,7 @@
       <package:Identifier>TC739</package:Identifier>
       <package:Title>Expediente TC739 (ejemplo)</package:Title>
       <package:Producer>Universidad de Costa Rica</package:Producer>
-      <package:Generated>2026-03-06T05:13:22</package:Generated>
+      <package:Generated>2026-03-06T15:16:35</package:Generated>
       <package:Note>Ejemplo didáctico; NO es una firma válida.</package:Note>
     </package:PackageInfo>
   </ds:Object>

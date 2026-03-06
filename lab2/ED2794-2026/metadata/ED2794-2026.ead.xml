@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ead PUBLIC "+//ISBN 1-931666-00-8//DTD ead.dtd (Encoded Archival Description (EAD) Version 2002)//EN" "ead.dtd">
+<ead>
+  <eadheader findaidstatus="edited">
+    <eadid>ED2794-2026</eadid>
+    <filedesc>
+      <titlestmt>
+        <titleproper>Formación Archivística Continua</titleproper>
+        <author>Laboratorio Archivematica (UCR)</author>
+      </titlestmt>
+      <publicationstmt>
+        <publisher>Universidad de Costa Rica</publisher>
+        <date>2026-03-06</date>
+      </publicationstmt>
+    </filedesc>
+  </eadheader>
+
+  <archdesc level="file">
+    <did>
+      <repository>
+        <corpname>Universidad de Costa Rica</corpname>
+      </repository>
+      <unitid>ED2794-2026</unitid>
+      <unittitle>Formación Archivística Continua</unittitle>
+      <unitdate normal="2026-03-06">2026-03-06</unitdate>
+      <origination label="Creator">
+        <corpname>Acción Social (AS)</corpname>
+      </origination>
+      <physdesc>
+        <extent>5 objetos digitales</extent>
+      </physdesc>
+    </did>
+
+    <scopecontent>
+      <p>Expediente de ejemplo para laboratorio. Clasificación: UCR / AS / S35 / ED2794-2026.</p>
+      <p>Nota: Este EAD 2002 se incluye para importación manual en AtoM.</p>
+    </scopecontent>
+
+    <dsc>
+      <c level="item" id="ED2794-2026-item-1">
+        <did>
+          <unitid>EH-15-2026.pdf</unitid>
+          <unittitle>EH-15-2026.pdf</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+      <c level="item" id="ED2794-2026-item-2">
+        <did>
+          <unitid>EH-151-2026.pdf</unitid>
+          <unittitle>EH-151-2026.pdf</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+      <c level="item" id="ED2794-2026-item-3">
+        <did>
+          <unitid>EH-156-2026.pdf</unitid>
+          <unittitle>EH-156-2026.pdf</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+      <c level="item" id="ED2794-2026-item-4">
+        <did>
+          <unitid>VAS-5565-2025.pdf</unitid>
+          <unittitle>VAS-5565-2025.pdf</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+      <c level="item" id="ED2794-2026-item-5">
+        <did>
+          <unitid>ED2794-2026-ficha-xades.xml</unitid>
+          <unittitle>ED2794-2026-ficha-xades.xml</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+    </dsc>
+  </archdesc>
+</ead>

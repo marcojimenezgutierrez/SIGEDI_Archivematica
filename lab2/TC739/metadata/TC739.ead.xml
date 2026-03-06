@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ead PUBLIC "+//ISBN 1-931666-00-8//DTD ead.dtd (Encoded Archival Description (EAD) Version 2002)//EN" "ead.dtd">
+<ead>
+  <eadheader findaidstatus="edited">
+    <eadid>TC739</eadid>
+    <filedesc>
+      <titlestmt>
+        <titleproper>Expediente TC739 (ejemplo)</titleproper>
+        <author>Laboratorio Archivematica (UCR)</author>
+      </titlestmt>
+      <publicationstmt>
+        <publisher>Universidad de Costa Rica</publisher>
+        <date>2026-03-06</date>
+      </publicationstmt>
+    </filedesc>
+  </eadheader>
+
+  <archdesc level="file">
+    <did>
+      <repository>
+        <corpname>Universidad de Costa Rica</corpname>
+      </repository>
+      <unitid>TC739</unitid>
+      <unittitle>Expediente TC739 (ejemplo)</unittitle>
+      <unitdate normal="2026-03-06">2026-03-06</unitdate>
+      <origination label="Creator">
+        <corpname>Acción Social (AS)</corpname>
+      </origination>
+      <physdesc>
+        <extent>5 objetos digitales</extent>
+      </physdesc>
+    </did>
+
+    <scopecontent>
+      <p>Expediente de ejemplo para laboratorio. Clasificación: UCR / AS / S37 / TC739.</p>
+      <p>Nota: Este EAD 2002 se incluye para importación manual en AtoM.</p>
+    </scopecontent>
+
+    <dsc>
+      <c level="item" id="TC739-item-1">
+        <did>
+          <unitid>Circular VAS-12-2024.pdf</unitid>
+          <unittitle>Circular VAS-12-2024.pdf</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+      <c level="item" id="TC739-item-2">
+        <did>
+          <unitid>EH-244-2026.pdf</unitid>
+          <unittitle>EH-244-2026.pdf</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+      <c level="item" id="TC739-item-3">
+        <did>
+          <unitid>Resolución VAS-9-2020.pdf</unitid>
+          <unittitle>Resolución VAS-9-2020.pdf</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+      <c level="item" id="TC739-item-4">
+        <did>
+          <unitid>VAS-3593-2022.pdf</unitid>
+          <unittitle>VAS-3593-2022.pdf</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+      <c level="item" id="TC739-item-5">
+        <did>
+          <unitid>TC739-ficha-xades.xml</unitid>
+          <unittitle>TC739-ficha-xades.xml</unittitle>
+          <unitdate normal="2026-03-06">2026-03-06</unitdate>
+        </did>
+      </c>
+    </dsc>
+  </archdesc>
+</ead>
