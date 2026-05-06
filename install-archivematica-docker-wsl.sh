@@ -10,7 +10,7 @@ HACK_DIR="${HACK_DIR:-$CLONE_DIR/hack}"
 VM_MAX_MAP_COUNT="${VM_MAX_MAP_COUNT:-262144}"
 
 # === Buzón de transferencias para SIGEDI (host -> contenedor) ===
-SIGEDI_HOST_TRANSFER_DIR="${SIGEDI_HOST_TRANSFER_DIR:-/mnt/d/ArchivematicaDrop/transfer-source}"
+SIGEDI_HOST_TRANSFER_DIR="${SIGEDI_HOST_TRANSFER_DIR:-/mnt/c/ArchivematicaDrop/transfer-source}"
 SIGEDI_CONTAINER_TRANSFER_DIR="${SIGEDI_CONTAINER_TRANSFER_DIR:-/home/transfer-source-sigedi}"
 
 # === “FTP” para archivistas (recomendado: SFTP) ===
