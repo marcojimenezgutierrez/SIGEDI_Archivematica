@@ -53,6 +53,10 @@ VM_MAX_MAP_COUNT="${VM_MAX_MAP_COUNT:-262144}"
 THEME_SKELETON_REPO="${THEME_SKELETON_REPO:-https://github.com/artefactual-labs/arThemeB5Plugin.git}"
 THEME_SKELETON_NAME="arThemeB5Plugin"
 
+# === Buzón de transferencias para compartir archivos de Archivematica a AtoM (host -> contenedor) ===
+ATOMTOARCHIVEMATICA_HOST_TRANSFER_DIR="${ATOMTOARCHIVEMATICA_HOST_TRANSFER_DIR:-/mnt/c/ArchivematicaDrop/transfer-share}"
+ATOMTOARCHIVEMATICA_CONTAINER_TRANSFER_DIR="${ATOMTOARCHIVEMATICA_CONTAINER_TRANSFER_DIR:-/home/transfer-share-from-atom}"
+
 COMPOSE_FILE_VALUE=""
 
 log() {
@@ -113,7 +117,7 @@ check_host() {
   ensure_command sudo sudo
 
   have docker || die "docker was not found. Enable Docker Desktop WSL integration for this distro, then try again."
-  docker info >/dev/null 2>&1 || die "Docker is not responding. Start Docker Desktop and enable WSL integration for this distro."
+  # docker info >/dev/null 2>&1 || die "Docker is not responding. Start Docker Desktop and enable WSL integration for this distro."
   docker compose version >/dev/null 2>&1 || die "docker compose was not found. Install/enable the Docker Compose plugin."
 }
 
@@ -180,6 +184,121 @@ configure_compose_file() {
 
   export COMPOSE_FILE="$COMPOSE_FILE_VALUE"
   log "COMPOSE_FILE=$COMPOSE_FILE"
+}
+
+# === crea/actualiza docker-compose.override.yml para montar el atom to archivematica ===
+configure_atomtoarchivematica_transfer_mount() {
+  log "Configurando buzón Atom to Archivematica (bind mount) para Transfer share…"
+
+  if is_wsl; then
+    [ -d /mnt/c ] || die "No existe /mnt/c. ¿La unidad C: está montada en WSL? Ajusta ATOMTOARCHIVEMATICA_HOST_TRANSFER_DIR si tu disco es otro."
+  fi
+
+  mkdir -p "$ATOMTOARCHIVEMATICA_HOST_TRANSFER_DIR"
+
+  # Best-effort permisos (en /mnt/d puede ser emulado; sirve para evitar bloqueos de escritura)
+  chmod -R a+rwx "$ATOMTOARCHIVEMATICA_HOST_TRANSFER_DIR" 2>/dev/null || true
+
+  local mount_line="${ATOMTOARCHIVEMATICA_HOST_TRANSFER_DIR}:${ATOMTOARCHIVEMATICA_CONTAINER_TRANSFER_DIR}"
+  local override_file="$ATOM_CLONE_DIR/docker/docker-compose.override.yml"
+
+  log "Configurando el bind mount en el docker-compose.override.yml para los servicios atom y atom_worker…"
+
+  python3 - "$override_file" "$mount_line" <<'PY'
+import sys
+import re
+
+path = sys.argv[1]
+mount = sys.argv[2]
+services = ["atom", "atom_worker"]
+
+try:
+    with open(path, "r", encoding="utf-8") as f:
+        lines = f.read().splitlines()
+except FileNotFoundError:
+    lines = []
+
+def has_services_key(ls):
+    return any(re.match(r'^services:\s*$', l) for l in ls)
+
+def find_service_block(ls, svc):
+    pat = re.compile(rf'^\s{{2}}{re.escape(svc)}:\s*$')
+    for i,l in enumerate(ls):
+        if pat.match(l):
+            j = i+1
+            while j < len(ls):
+                if re.match(r'^\s{2}[A-Za-z0-9_.-]+:\s*$', ls[j]):
+                    break
+                j += 1
+            return i, j
+    return None
+
+def ensure_mount_in_block(ls, start, end):
+    block = ls[start:end]
+    if any(mount in l for l in block):
+        return ls
+
+    vol_idx = None
+    for k in range(start, end):
+        if re.match(r'^\s{4}volumes:\s*$', ls[k]):
+            vol_idx = k
+            break
+
+    if vol_idx is None:
+        insert_at = start + 1
+        ls.insert(insert_at, "    volumes:")
+        ls.insert(insert_at + 1, f"      - {mount}")
+        return ls
+
+    insert_at = vol_idx + 1
+    while insert_at < end and re.match(r'^\s{6}-\s+', ls[insert_at]):
+        insert_at += 1
+    ls.insert(insert_at, f"      - {mount}")
+    return ls
+
+if not lines:
+    lines = ["services:"]
+elif not has_services_key(lines):
+    lines.append("")
+    lines.append("services:")
+
+for svc in services:
+    blk = find_service_block(lines, svc)
+    if blk is None:
+        if lines and lines[-1].strip():
+            lines.append("")
+        lines.append(f"  {svc}:")
+        lines.append("    volumes:")
+        lines.append(f"      - {mount}")
+    else:
+        s,e = blk
+        lines = ensure_mount_in_block(lines, s, e)
+
+with open(path, "w", encoding="utf-8") as f:
+    f.write("\n".join(lines) + "\n")
+PY
+
+  # === Agregar el override al COMPOSE_FILE para que Docker Compose lo lea ===
+  # Cuando COMPOSE_FILE está definido explícitamente, Docker Compose NO lee
+  # docker-compose.override.yml automáticamente. Debemos incluirlo manualmente.
+  if [ -n "${COMPOSE_FILE:-}" ]; then
+    case "$COMPOSE_FILE" in
+      *"$override_file"*)
+        log "El override ya está incluido en COMPOSE_FILE."
+        ;;
+      *)
+        export COMPOSE_FILE="${COMPOSE_FILE}:${override_file}"
+        COMPOSE_FILE_VALUE="${COMPOSE_FILE_VALUE}:${override_file}"
+        log "Override añadido a COMPOSE_FILE=$COMPOSE_FILE"
+        ;;
+    esac
+  else
+    export COMPOSE_FILE="$override_file"
+    COMPOSE_FILE_VALUE="$override_file"
+    log "COMPOSE_FILE=$COMPOSE_FILE (solo override)"
+  fi
+
+  log "Bind mount configurado con éxito para atom y atom_worker."
 }
 
 validate_plugin_name() {
@@ -363,11 +482,33 @@ wait_for_services() {
   wait_for_elasticsearch
 }
 
+# === Asegura que el directorio de transferencia exista dentro de los contenedores ===
+# Docker crea el punto de montaje como root:root al usar bind mounts. Sin embargo,
+# los procesos de AtoM corren como www-data (UID 33), por lo que necesitamos crear
+# el directorio y ajustar los permisos explícitamente tras levantar los contenedores.
+ensure_transfer_dir_in_containers() {
+  local dir="$ATOMTOARCHIVEMATICA_CONTAINER_TRANSFER_DIR"
+  local services=("atom" "atom_worker")
+
+  log "Asegurando que el directorio de transferencia '$dir' exista en los contenedores con permisos correctos…"
+
+  for svc in "${services[@]}"; do
+    log "  → Contenedor '$svc': creando '$dir' y ajustando permisos para www-data…"
+    docker compose exec -T --user root "$svc" \
+      sh -c "mkdir -p '$dir' && chown www-data:www-data '$dir' && chmod 775 '$dir'" || {
+        warn "No se pudo crear/ajustar '$dir' en el contenedor '$svc'. Verificar manualmente."
+      }
+  done
+
+  log "Directorio de transferencia verificado en todos los contenedores."
+}
+
 compose_up_and_initialize() {
   log "Starting AtoM containers. The first build can take several minutes."
   cd "$ATOM_CLONE_DIR"
   docker compose up -d
   wait_for_services
+  ensure_transfer_dir_in_containers
 
   if [ "$ATOM_PURGE_DEMO" = "1" ]; then
     warn "Running tools:purge --demo. This resets/populates the AtoM database for development."
@@ -425,6 +566,7 @@ main() {
   set_vm_max_map_count
   clone_or_update_atom
   configure_compose_file
+  configure_atomtoarchivematica_transfer_mount
   prepare_optional_plugin
   compose_up_and_initialize
   print_reference

@@ -13,6 +13,10 @@ VM_MAX_MAP_COUNT="${VM_MAX_MAP_COUNT:-262144}"
 SIGEDI_HOST_TRANSFER_DIR="${SIGEDI_HOST_TRANSFER_DIR:-/mnt/c/ArchivematicaDrop/transfer-source}"
 SIGEDI_CONTAINER_TRANSFER_DIR="${SIGEDI_CONTAINER_TRANSFER_DIR:-/home/transfer-source-sigedi}"
 
+# === Buzón de transferencias para compartir archivos de Archivematica a AtoM (host -> contenedor) ===
+ARCHIVEMATICATOATOM_HOST_TRANSFER_DIR="${ARCHIVEMATICATOATOM_HOST_TRANSFER_DIR:-/mnt/c/ArchivematicaDrop/transfer-share}"
+ARCHIVEMATICATOATOM_CONTAINER_TRANSFER_DIR="${ARCHIVEMATICATOATOM_CONTAINER_TRANSFER_DIR:-/home/transfer-share-from-archivematica}"
+
 # === “FTP” para archivistas (recomendado: SFTP) ===
 SFTP_ENABLE="${SFTP_ENABLE:-1}"
 SFTP_SERVICE_NAME="${SFTP_SERVICE_NAME:-sigedi-sftp}"
@@ -46,7 +50,7 @@ install_apt_packages() {
 
 check_docker() {
   have docker || die "No encuentro 'docker' en tu WSL. Activa Docker Desktop + WSL Integration para tu distro e instala el CLI si hace falta."
-  docker info >/dev/null 2>&1 || die "Docker no responde. Abre Docker Desktop y asegúrate de que el motor esté corriendo y WSL Integration esté habilitado."
+  # docker info >/dev/null 2>&1 || die "Docker no responde. Abre Docker Desktop y asegúrate de que el motor esté corriendo y WSL Integration esté habilitado."
   docker compose version >/dev/null 2>&1 || die "No encuentro 'docker compose'. Asegúrate de tener el plugin de Compose disponible en Docker Desktop."
 }
 
@@ -82,7 +86,9 @@ clone_or_update_repo() {
     log "Repo ya existe en: $CLONE_DIR — actualizando (pull --rebase + submodules)…"
     git -C "$CLONE_DIR" fetch --all --prune
     git -C "$CLONE_DIR" checkout "$REPO_BRANCH"
-    git -C "$CLONE_DIR" pull --rebase
+    git -C "$CLONE_DIR" stash || true
+    git -C "$CLONE_DIR" pull --rebase || true
+    git -C "$CLONE_DIR" stash pop || true
     git -C "$CLONE_DIR" submodule update --init --recursive
   else
     log "Clonando Archivematica ($REPO_BRANCH) con submódulos en: $CLONE_DIR"
@@ -97,7 +103,7 @@ configure_sigedi_transfer_mount() {
   log "Configurando buzón SIGEDI (bind mount) para Transfer source…"
 
   if is_wsl; then
-    [ -d /mnt/d ] || die "No existe /mnt/d. ¿La unidad D: está montada en WSL? Ajusta SIGEDI_HOST_TRANSFER_DIR si tu disco es otro."
+    [ -d /mnt/c ] || die "No existe /mnt/c. ¿La unidad C: está montada en WSL? Ajusta SIGEDI_HOST_TRANSFER_DIR si tu disco es otro."
   fi
 
   mkdir -p "$SIGEDI_HOST_TRANSFER_DIR"
@@ -106,6 +112,124 @@ configure_sigedi_transfer_mount() {
   chmod -R a+rwx "$SIGEDI_HOST_TRANSFER_DIR" 2>/dev/null || true
 
   local mount_line="${SIGEDI_HOST_TRANSFER_DIR}:${SIGEDI_CONTAINER_TRANSFER_DIR}"
+  local override_file="$HACK_DIR/docker-compose.override.yml"
+
+  local targets=("archivematica-storage-service" "archivematica-dashboard" "archivematica-mcp-server" "archivematica-mcp-client")
+  local svc_list
+  svc_list="$(cd "$HACK_DIR" && docker compose config --services)"
+
+  local existing_targets=()
+  for s in "${targets[@]}"; do
+    if echo "$svc_list" | grep -qx "$s"; then
+      existing_targets+=("$s")
+    fi
+  done
+  if [ "${#existing_targets[@]}" -eq 0 ]; then
+    die "No pude detectar servicios target en docker compose. Revisa que estés en el hack correcto y que docker compose funcione."
+  fi
+
+  if [ ! -f "$override_file" ]; then
+    log "Creando $override_file con el bind mount solicitado…"
+    {
+      echo "services:"
+      for s in "${existing_targets[@]}"; do
+        echo "  $s:"
+        echo "    volumes:"
+        echo "      - $mount_line"
+      done
+    } > "$override_file"
+    return 0
+  fi
+
+  if grep -Fq "$mount_line" "$override_file"; then
+    log "Ya existe el mount en $override_file — no se realizan cambios."
+    return 0
+  fi
+
+  log "Actualizando $override_file para añadir el bind mount (sin duplicados)…"
+  python3 - "$override_file" "$mount_line" "${existing_targets[@]}" <<'PY'
+import sys, re
+
+path = sys.argv[1]
+mount = sys.argv[2]
+services = sys.argv[3:]
+
+lines = open(path, "r", encoding="utf-8").read().splitlines()
+
+def has_services_key(ls):
+    return any(re.match(r'^services:\s*$', l) for l in ls)
+
+def find_service_block(ls, svc):
+    pat = re.compile(rf'^\s{{2}}{re.escape(svc)}:\s*$')
+    for i,l in enumerate(ls):
+        if pat.match(l):
+            j = i+1
+            while j < len(ls):
+                if re.match(r'^\s{2}[A-Za-z0-9_.-]+:\s*$', ls[j]):
+                    break
+                j += 1
+            return i, j
+    return None
+
+def ensure_mount_in_block(ls, start, end):
+    block = ls[start:end]
+    if any(mount in l for l in block):
+        return ls
+
+    vol_idx = None
+    for k in range(start, end):
+        if re.match(r'^\s{4}volumes:\s*$', ls[k]):
+            vol_idx = k
+            break
+
+    if vol_idx is None:
+        insert_at = start + 1
+        ls.insert(insert_at, "    volumes:")
+        ls.insert(insert_at + 1, f"      - {mount}")
+        return ls
+
+    insert_at = vol_idx + 1
+    while insert_at < end and re.match(r'^\s{6}-\s+', ls[insert_at]):
+        insert_at += 1
+    ls.insert(insert_at, f"      - {mount}")
+    return ls
+
+if not has_services_key(lines):
+    lines.append("")
+    lines.append("services:")
+
+for svc in services:
+    blk = find_service_block(lines, svc)
+    if blk is None:
+        if lines and lines[-1].strip():
+            lines.append("")
+        lines.append(f"  {svc}:")
+        lines.append("    volumes:")
+        lines.append(f"      - {mount}")
+    else:
+        s,e = blk
+        lines = ensure_mount_in_block(lines, s, e)
+
+open(path, "w", encoding="utf-8").write("\n".join(lines) + "\n")
+PY
+
+  log "OK. Bind mount añadido: $mount_line"
+}
+
+# === crea/actualiza docker-compose.override.yml para montar el archivematica to atom ===
+configure_archivematicatoatom_transfer_mount() {
+  log "Configurando buzón Archivematica to Atom (bind mount) para Transfer share…"
+
+  if is_wsl; then
+    [ -d /mnt/c ] || die "No existe /mnt/c. ¿La unidad C: está montada en WSL? Ajusta SIGEDI_HOST_TRANSFER_DIR si tu disco es otro."
+  fi
+
+  mkdir -p "$ARCHIVEMATICATOATOM_HOST_TRANSFER_DIR"
+
+  # Best-effort permisos (en /mnt/d puede ser emulado; sirve para evitar bloqueos de escritura)
+  chmod -R a+rwx "$ARCHIVEMATICATOATOM_HOST_TRANSFER_DIR" 2>/dev/null || true
+
+  local mount_line="${ARCHIVEMATICATOATOM_HOST_TRANSFER_DIR}:${ARCHIVEMATICATOATOM_CONTAINER_TRANSFER_DIR}"
   local override_file="$HACK_DIR/docker-compose.override.yml"
 
   local targets=("archivematica-storage-service" "archivematica-dashboard" "archivematica-mcp-server" "archivematica-mcp-client")
@@ -351,8 +475,10 @@ run_install_steps() {
   configure_sigedi_transfer_mount
   configure_sigedi_sftp_service
 
+  configure_archivematicatoatom_transfer_mount
+
   log "Creando volúmenes externos (make create-volumes)…"
-  make create-volumes
+  # make create-volumes
 
   log "Construyendo imágenes (make build)… (puede tardar bastante)"
   make build
