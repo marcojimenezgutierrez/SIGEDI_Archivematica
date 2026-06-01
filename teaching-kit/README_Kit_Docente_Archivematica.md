@@ -13,23 +13,26 @@ Este kit incluye scripts opcionales para preparar expedientes de práctica y lim
   - Ejemplo (Linux): `/srv/archivematica/transfers`
 
 ## Scripts
-1) `seed-expedientes.sh`
+
+Los scripts se encuentran en `lab/scripts/` (raíz del repositorio).
+
+1) `lab/scripts/seed-expedientes.sh`
    - Crea 12 expedientes de práctica: `U01_EXP-001` … `U12_EXP-001`.
    - Incluye archivos de ejemplo (PDF/JPG/TXT) y una estructura simple.
 
-2) `cleanup-expedientes.sh`
+2) `lab/scripts/cleanup-expedientes.sh`
    - Borra los expedientes de práctica del buzón (solo los Uxx_EXP-001).
 
-3) `reset-lab.sh`
+3) `lab/scripts/reset-lab.sh`
    - Reinicia servicios (opcional) y limpia expedientes de práctica.
    - Tiene modo `--hard` para *reset total* (requiere `--force`).
 
 ## Uso rápido
 ```bash
 export TRANSFERS_DIR="/mnt/c/ArchivematicaDrop/transfers"
-bash seed-expedientes.sh
+bash lab/scripts/seed-expedientes.sh
 # ... dar clase ...
-bash cleanup-expedientes.sh
+bash lab/scripts/cleanup-expedientes.sh
 ```
 
 ## Accesos del entorno

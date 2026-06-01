@@ -17,15 +17,15 @@ set -euo pipefail
 # would hide the native AtoM plugins shipped in the source tree.
 #
 # Usage:
-#   chmod +x install-atom-dev-docker-wsl.sh
-#   ./install-atom-dev-docker-wsl.sh
+#   chmod +x install_atom.sh
+#   ./install_atom.sh
 #
 # Optional examples:
-#   ATOM_BRANCH=qa/2.x ./install-atom-dev-docker-wsl.sh
-#   ATOM_CLONE_DIR=$HOME/src/atom-dev ./install-atom-dev-docker-wsl.sh
-#   ATOM_PLUGIN_NAME=arSigediPlugin ./install-atom-dev-docker-wsl.sh
-#   ATOM_PLUGIN_NAME=arSigediThemePlugin ATOM_CREATE_BS5_THEME=1 ./install-atom-dev-docker-wsl.sh
-#   ATOM_PURGE_DEMO=0 ./install-atom-dev-docker-wsl.sh
+#   ATOM_BRANCH=qa/2.x ./install_atom.sh
+#   ATOM_CLONE_DIR=$HOME/src/atom-dev ./install_atom.sh
+#   ATOM_PLUGIN_NAME=arSigediPlugin ./install_atom.sh
+#   ATOM_PLUGIN_NAME=arSigediThemePlugin ATOM_CREATE_BS5_THEME=1 ./install_atom.sh
+#   ATOM_PURGE_DEMO=0 ./install_atom.sh
 #
 # Important variables:
 #   ATOM_REPO_URL              Default: https://github.com/artefactual/atom.git
@@ -555,8 +555,8 @@ Useful commands:
   docker compose down
 
 Optional plugin helpers:
-  ATOM_PLUGIN_NAME=arSigediPlugin ./install-atom-dev-docker-wsl.sh
-  ATOM_PLUGIN_NAME=arSigediThemePlugin ATOM_CREATE_BS5_THEME=1 ./install-atom-dev-docker-wsl.sh
+  ATOM_PLUGIN_NAME=arSigediPlugin ./install_atom.sh
+  ATOM_PLUGIN_NAME=arSigediThemePlugin ATOM_CREATE_BS5_THEME=1 ./install_atom.sh
 
 EOF
 }
