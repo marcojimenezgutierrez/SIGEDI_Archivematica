@@ -43,7 +43,7 @@ if [ -z "${TRANSFERS_DIR:-}" ]; then
 fi
 
 echo "[1/3] Limpiando expedientes de práctica del buzón…"
-bash cleanup-expedientes.sh
+bash "$(dirname "$0")/cleanup-expedientes.sh"
 
 if [ "$RESTART" -eq 1 ]; then
   [ -n "$HACK_DIR" ] || { echo "Falta --hack-dir para reiniciar"; exit 1; }
