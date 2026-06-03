@@ -73,7 +73,33 @@ Ambos sistemas se ejecutan en contenedores Docker aislados y no comparten un sis
 | `transfer-source` | `C:\ArchivematicaDrop\transfer-source` | Los archivistas depositan paquetes de transferencia aquí; Archivematica los lee como fuente de transferencia |
 | `transfer-share` | `C:\ArchivematicaDrop\transfer-share` | Archivematica escribe los DIPs aquí; AtoM los lee desde su propio montaje del contenedor |
 
-Los scripts de instalación inyectan ambas rutas en `docker-compose.override.yml` automáticamente.
+Los scripts de instalación inyectan ambas rutas en `docker-compose.override.yml` automáticamente. Las rutas del host anteriores asumen un host WSL2; en un servidor Linux nativo cambian — vea la siguiente sección.
+
+### Entornos: WSL2 vs servidor Linux nativo
+
+Los scripts de instalación detectan el host automáticamente y se adaptan. La siguiente tabla resume qué cambia entre una estación **WSL2 + Docker Desktop** y un **servidor Linux nativo** (p. ej. Ubuntu 22.04).
+
+| Aspecto | WSL2 + Docker Desktop | Servidor Linux nativo |
+|:---|:---|:---|
+| Base de rutas del host (`TRANSFER_BASE_DIR`) | `/mnt/c/ArchivematicaDrop` (unidad C: de Windows) | `$HOME/ArchivematicaDrop` |
+| Ruta host de `transfer-source` | `/mnt/c/ArchivematicaDrop/transfer-source` | `$HOME/ArchivematicaDrop/transfer-source` |
+| Ruta host de `transfer-share` | `/mnt/c/ArchivematicaDrop/transfer-share` | `$HOME/ArchivematicaDrop/transfer-share` |
+| Volúmenes de datos del pipeline (`am-pipeline-data`, `ss-location-data`) | A menudo creados automáticamente por Docker Desktop | **Deben** existir primero — `make create-volumes` / `mkdir -p ~/.am/...` (el `dockerd` nativo no crea automáticamente el origen de los bind volumes) |
+| `vm.max_map_count` | Se aplica dentro de la distro `docker-desktop` vía `wsl.exe` | Se aplica directamente con `sysctl` + se persiste en `/etc/sysctl.conf` |
+| Modo de fallo del rsync del DIP | `exit 23` porque DrvFS rechaza preservar permisos/timestamps en `/mnt/c` | `exit 23` por desajuste de propietario/permisos en el directorio compartido |
+
+**Dos reglas para que el buzón compartido funcione, en cualquier entorno:**
+
+1. **Ambos instaladores deben resolver a la *misma* ruta host de `transfer-share`.** Comparten el contrato `TRANSFER_BASE_DIR`, así que ejecutar ambos con los valores por defecto en la misma máquina es suficiente. En un servidor nativo, ejecute **ambos con el mismo usuario del sistema** (la base por defecto es relativa a `$HOME`) o fije `TRANSFER_BASE_DIR` explícitamente en ambos:
+   ```bash
+   TRANSFER_BASE_DIR=/srv/archivematica bash installation/install_archivematica.sh
+   TRANSFER_BASE_DIR=/srv/archivematica bash installation/install_atom.sh
+   ```
+
+2. **Corrija el `exit 23` del rsync del DIP** configurando el campo **Rsync command** del Dashboard (Sección 2A) para omitir la preservación de atributos, lo que resuelve tanto el caso DrvFS de WSL como el de permisos en Linux nativo:
+   ```
+   rsync --no-perms --no-owner --no-group --no-times --omit-dir-times -O -r
+   ```
 
 ---
 
@@ -94,6 +120,7 @@ Navegue a **Administration → AtoM DIP upload** en el Dashboard de Archivematic
 | Login password | `demo` | Contraseña del administrador de AtoM |
 | AtoM version | `2.x` | |
 | Rsync target | `/home/transfer-share-from-archivematica` | Ruta *dentro del contenedor de Archivematica* donde se deposita el DIP |
+| Rsync command | `rsync --no-perms --no-owner --no-group --no-times --omit-dir-times -O -r` | Evita los fallos `exit 23` por desajustes de sistema de archivos/permisos (DrvFS en WSL, propietario en Linux nativo) |
 | REST API key | *(ver más abajo)* | Requerida para autorización y mapeo de metadatos |
 
 **Cómo obtener la REST API key de AtoM:** En AtoM, vaya a **Admin → Usuarios**, edite el usuario administrador y copie el valor del campo **REST API key**. Si está vacío, haga clic en **Generar** para crear una.

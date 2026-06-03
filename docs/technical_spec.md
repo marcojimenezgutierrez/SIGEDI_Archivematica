@@ -73,7 +73,33 @@ Both systems run in isolated Docker containers and do not share a filesystem by 
 | `transfer-source` | `C:\ArchivematicaDrop\transfer-source` | Archivists drop transfer packages here; Archivematica reads them as a transfer source |
 | `transfer-share` | `C:\ArchivematicaDrop\transfer-share` | Archivematica writes DIPs here; AtoM reads them from its own container mount |
 
-The installation scripts inject both paths into `docker-compose.override.yml` automatically.
+The installation scripts inject both paths into `docker-compose.override.yml` automatically. The host paths above assume a WSL2 host; on a native Linux server they differ — see the next section.
+
+### Environments: WSL2 vs native Linux server
+
+The install scripts auto-detect the host and adapt. The table below summarizes what changes between a **WSL2 + Docker Desktop** workstation and a **native Linux server** (e.g. Ubuntu 22.04).
+
+| Aspect | WSL2 + Docker Desktop | Native Linux server |
+|:---|:---|:---|
+| Host path base (`TRANSFER_BASE_DIR`) | `/mnt/c/ArchivematicaDrop` (Windows C: drive) | `$HOME/ArchivematicaDrop` |
+| `transfer-source` host path | `/mnt/c/ArchivematicaDrop/transfer-source` | `$HOME/ArchivematicaDrop/transfer-source` |
+| `transfer-share` host path | `/mnt/c/ArchivematicaDrop/transfer-share` | `$HOME/ArchivematicaDrop/transfer-share` |
+| Pipeline data volumes (`am-pipeline-data`, `ss-location-data`) | Often auto-created by Docker Desktop | **Must** exist first — `make create-volumes` / `mkdir -p ~/.am/...` (native `dockerd` does not auto-create bind-volume sources) |
+| `vm.max_map_count` | Applied inside the `docker-desktop` distro via `wsl.exe` | Applied directly with `sysctl` + persisted in `/etc/sysctl.conf` |
+| DIP rsync failure mode | `exit 23` from DrvFS rejecting permission/timestamp preservation on `/mnt/c` | `exit 23` from ownership/permission mismatch on the share dir |
+
+**Two rules for a working cross-stack share, regardless of environment:**
+
+1. **Both installers must resolve to the *same* host `transfer-share` path.** They share the `TRANSFER_BASE_DIR` contract, so running both with defaults on the same machine is enough. On a native server, run **both as the same OS user** (the default base is `$HOME`-relative) or set `TRANSFER_BASE_DIR` explicitly on both:
+   ```bash
+   TRANSFER_BASE_DIR=/srv/archivematica bash installation/install_archivematica.sh
+   TRANSFER_BASE_DIR=/srv/archivematica bash installation/install_atom.sh
+   ```
+
+2. **Fix the DIP `rsync` exit 23** by setting the Dashboard **Rsync command** (Section 2A) to skip attribute preservation, which resolves both the WSL DrvFS case and the native permissions case:
+   ```
+   rsync --no-perms --no-owner --no-group --no-times --omit-dir-times -O -r
+   ```
 
 ---
 
@@ -94,6 +120,7 @@ Navigate to **Administration → AtoM DIP upload** in the Archivematica Dashboar
 | Login password | `demo` | AtoM administrator password |
 | AtoM version | `2.x` | |
 | Rsync target | `/home/transfer-share-from-archivematica` | Path *inside the Archivematica container* where the DIP is placed |
+| Rsync command | `rsync --no-perms --no-owner --no-group --no-times --omit-dir-times -O -r` | Prevents `exit 23` failures from filesystem/permission mismatches (DrvFS on WSL, ownership on native Linux) |
 | REST API key | *(see below)* | Required for authorization and metadata mapping |
 
 **Getting the AtoM REST API key:** In AtoM, go to **Admin → Users**, edit the administrator user, and copy the value from the **REST API key** field. If it is empty, click **Generate** to create one.
