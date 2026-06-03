@@ -514,6 +514,13 @@ wait_for_services() {
 # Docker crea el punto de montaje como root:root al usar bind mounts. Sin embargo,
 # los procesos de AtoM corren como www-data (UID 33), por lo que necesitamos crear
 # el directorio y ajustar los permisos explícitamente tras levantar los contenedores.
+#
+# Usamos 0777 (no 775) de forma deliberada: este directorio del host lo comparten DOS
+# stacks (AtoM y Archivematica) cuyos contenedores corren con usuarios internos distintos
+# ('www-data' vs 'archivematica'). Como ambos montan el MISMO inodo del host, unos
+# permisos 775 propiedad de www-data dejarían al usuario de Archivematica sin escritura
+# y el "Upload DIP" fallaría con exit 23. 0777 permite que ambos lados lean y escriban,
+# en consonancia con ensure_share_dir_perms_in_containers() de install_archivematica.sh.
 ensure_transfer_dir_in_containers() {
   local dir="$ATOMTOARCHIVEMATICA_CONTAINER_TRANSFER_DIR"
   local services=("atom" "atom_worker")
@@ -521,9 +528,9 @@ ensure_transfer_dir_in_containers() {
   log "Asegurando que el directorio de transferencia '$dir' exista en los contenedores con permisos correctos…"
 
   for svc in "${services[@]}"; do
-    log "  → Contenedor '$svc': creando '$dir' y ajustando permisos para www-data…"
+    log "  → Contenedor '$svc': creando '$dir' y ajustando permisos (www-data, 0777)…"
     docker compose exec -T --user root "$svc" \
-      sh -c "mkdir -p '$dir' && chown www-data:www-data '$dir' && chmod 775 '$dir'" || {
+      sh -c "mkdir -p '$dir' && chown www-data:www-data '$dir' && chmod 0777 '$dir'" || {
         warn "No se pudo crear/ajustar '$dir' en el contenedor '$svc'. Verificar manualmente."
       }
   done

@@ -44,6 +44,7 @@ SS_PASS="${SS_PASS:-test}"
 
 # === Utilidades ===
 log() { printf "\n[%s] %s\n" "$(date +'%F %T')" "$*"; }
+warn() { printf "\nWARNING: %s\n" "$*" >&2; }
 die() { printf "\nERROR: %s\n" "$*" >&2; exit 1; }
 have() { command -v "$1" >/dev/null 2>&1; }
 is_wsl() { grep -qiE "microsoft|wsl" /proc/version 2>/dev/null; }
@@ -491,6 +492,40 @@ EOF
   log "README generado: $readme_file"
 }
 
+# === Asegura permisos del buzón compartido dentro de los contenedores de Archivematica ===
+# En un servidor Linux nativo, los bind mounts conservan el propietario/permisos del
+# host. El proceso que ejecuta rsync dentro de los contenedores de Archivematica corre
+# con un UID interno distinto al del usuario del host, por lo que no puede escribir en
+# el directorio compartido y el micro-servicio "Upload DIP" falla con:
+#   [uploadDIP] Rsync quit unexpectedly (exit 23)
+# Las banderas --no-perms/--no-owner del comando rsync NO resuelven esto: solo evitan
+# replicar atributos del origen, no otorgan permiso de escritura en el destino.
+#
+# En WSL/Docker Desktop el montaje DrvFS de /mnt/c expone permisos amplios y enmascara
+# el problema, por eso solo ocurre en Linux nativo.
+#
+# El directorio lo comparten DOS stacks (Archivematica y AtoM) cuyos contenedores corren
+# con usuarios internos diferentes (p. ej. 'archivematica' vs 'www-data'), así que un
+# chown a un único usuario no sirve para ambos lados; usamos 0777 para que los dos puedan
+# leer y escribir. (El install_atom.sh aplica el paso equivalente en sus contenedores.)
+ensure_share_dir_perms_in_containers() {
+  local dir="$ARCHIVEMATICATOATOM_CONTAINER_TRANSFER_DIR"
+  local targets=("archivematica-storage-service" "archivematica-dashboard" "archivematica-mcp-server" "archivematica-mcp-client")
+  local svc_list
+  svc_list="$(cd "$HACK_DIR" && docker compose config --services)"
+
+  log "Asegurando permisos del buzón compartido '$dir' dentro de los contenedores de Archivematica…"
+  for s in "${targets[@]}"; do
+    echo "$svc_list" | grep -qx "$s" || continue
+    log "  → Contenedor '$s': mkdir + chmod 0777 en '$dir'…"
+    docker compose exec -T --user root "$s" \
+      sh -c "mkdir -p '$dir' && chmod 0777 '$dir'" \
+      || warn "No se pudo ajustar permisos de '$dir' en '$s'. Ejecútalo manualmente si el Upload DIP falla con exit 23."
+  done
+
+  log "Permisos del buzón compartido verificados en los contenedores de Archivematica."
+}
+
 run_install_steps() {
   log "Entrando a: $HACK_DIR"
   cd "$HACK_DIR"
@@ -523,6 +558,9 @@ run_install_steps() {
 
   log "Reiniciando servicios de Archivematica (make restart-am-services)…"
   make restart-am-services
+
+  # Importante en servidores Linux nativos: corrige el "Upload DIP ... exit 23".
+  ensure_share_dir_perms_in_containers
 }
 
 print_access_info() {
