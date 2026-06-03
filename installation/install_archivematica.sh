@@ -10,12 +10,19 @@ HACK_DIR="${HACK_DIR:-$CLONE_DIR/hack}"
 VM_MAX_MAP_COUNT="${VM_MAX_MAP_COUNT:-262144}"
 
 # === Buzón de transferencias para SIGEDI (host -> contenedor) ===
-SIGEDI_HOST_TRANSFER_DIR="${SIGEDI_HOST_TRANSFER_DIR:-/mnt/c/ArchivematicaDrop/transfer-source}"
+# La ruta del host se resuelve según el entorno en resolve_host_transfer_dirs():
+#   - WSL 2 + Docker Desktop -> unidad C: de Windows (/mnt/c/ArchivematicaDrop)
+#   - Servidor Linux nativo  -> $HOME/ArchivematicaDrop
+# Puedes forzarla exportando SIGEDI_HOST_TRANSFER_DIR (o TRANSFER_BASE_DIR).
+SIGEDI_HOST_TRANSFER_DIR="${SIGEDI_HOST_TRANSFER_DIR:-}"
 SIGEDI_CONTAINER_TRANSFER_DIR="${SIGEDI_CONTAINER_TRANSFER_DIR:-/home/transfer-source-sigedi}"
 
 # === Buzón de transferencias para compartir archivos de Archivematica a AtoM (host -> contenedor) ===
-ARCHIVEMATICATOATOM_HOST_TRANSFER_DIR="${ARCHIVEMATICATOATOM_HOST_TRANSFER_DIR:-/mnt/c/ArchivematicaDrop/transfer-share}"
+ARCHIVEMATICATOATOM_HOST_TRANSFER_DIR="${ARCHIVEMATICATOATOM_HOST_TRANSFER_DIR:-}"
 ARCHIVEMATICATOATOM_CONTAINER_TRANSFER_DIR="${ARCHIVEMATICATOATOM_CONTAINER_TRANSFER_DIR:-/home/transfer-share-from-archivematica}"
+
+# Base común para las rutas del host (se rellena en resolve_host_transfer_dirs si está vacía).
+TRANSFER_BASE_DIR="${TRANSFER_BASE_DIR:-}"
 
 # === “FTP” para archivistas (recomendado: SFTP) ===
 SFTP_ENABLE="${SFTP_ENABLE:-1}"
@@ -40,6 +47,23 @@ log() { printf "\n[%s] %s\n" "$(date +'%F %T')" "$*"; }
 die() { printf "\nERROR: %s\n" "$*" >&2; exit 1; }
 have() { command -v "$1" >/dev/null 2>&1; }
 is_wsl() { grep -qiE "microsoft|wsl" /proc/version 2>/dev/null; }
+
+# Resuelve la base de las rutas del host según el entorno:
+#   - WSL 2 + Docker Desktop: la unidad C: de Windows (compartida con ambos stacks)
+#   - Servidor Linux nativo:  un directorio bajo el HOME del usuario
+# Respeta cualquier override por variable de entorno.
+resolve_host_transfer_dirs() {
+  if [ -z "$TRANSFER_BASE_DIR" ]; then
+    if is_wsl && [ -d /mnt/c ]; then
+      TRANSFER_BASE_DIR="/mnt/c/ArchivematicaDrop"
+    else
+      TRANSFER_BASE_DIR="$HOME/ArchivematicaDrop"
+    fi
+  fi
+  SIGEDI_HOST_TRANSFER_DIR="${SIGEDI_HOST_TRANSFER_DIR:-$TRANSFER_BASE_DIR/transfer-source}"
+  ARCHIVEMATICATOATOM_HOST_TRANSFER_DIR="${ARCHIVEMATICATOATOM_HOST_TRANSFER_DIR:-$TRANSFER_BASE_DIR/transfer-share}"
+  log "Rutas del host -> source: ${SIGEDI_HOST_TRANSFER_DIR} | share: ${ARCHIVEMATICATOATOM_HOST_TRANSFER_DIR}"
+}
 
 install_apt_packages() {
   local pkgs=("$@")
@@ -442,8 +466,7 @@ write_readme() {
   - clave:   \`${SS_PASS}\`
 
 ## Buzón SIGEDI (Transfer source)
-- En Windows:  D:\\ArchivematicaDrop\\transfer-source
-- En WSL:      ${SIGEDI_HOST_TRANSFER_DIR}
+- En el host: ${SIGEDI_HOST_TRANSFER_DIR}
 - En contenedor (Archivematica): ${SIGEDI_CONTAINER_TRANSFER_DIR}
 
 **Uso:** Copia aquí carpetas de expedientes (ej: \`U01_EXP-001/\`) y luego en el Dashboard:
@@ -477,8 +500,17 @@ run_install_steps() {
 
   configure_archivematicatoatom_transfer_mount
 
+  log "Creando directorios de datos del pipeline (host)…"
+  # El target 'make create-volumes' del hack hace bind de estos volúmenes a
+  # ~/.am/*; si los directorios no existen, 'docker compose up' falla con
+  # 'failed to mount local volume ... no such file or directory'.
+  # Creamos los directorios explícitamente como red de seguridad y respetamos
+  # las variables del Makefile si están definidas.
+  mkdir -p "${AM_PIPELINE_DATA:-$HOME/.am/am-pipeline-data}"
+  mkdir -p "${SS_LOCATION_DATA:-$HOME/.am/ss-location-data}"
+
   log "Creando volúmenes externos (make create-volumes)…"
-  # make create-volumes
+  make create-volumes
 
   log "Construyendo imágenes (make build)… (puede tardar bastante)"
   make build
@@ -507,8 +539,7 @@ Credenciales por defecto (entorno hack/dev):
 - Storage Service: ${SS_USER} / ${SS_PASS}
 
 Buzón SIGEDI (para que archivistas depositen expedientes):
-- En Windows:     D:\\ArchivematicaDrop\\transfer-source
-- En WSL:         ${SIGEDI_HOST_TRANSFER_DIR}
+- En el host:     ${SIGEDI_HOST_TRANSFER_DIR}
 - En contenedor:  ${SIGEDI_CONTAINER_TRANSFER_DIR}
 
 SFTP (FTP seguro) para cargar expedientes al buzón:
@@ -533,6 +564,7 @@ main() {
   have python3 || install_apt_packages python3
 
   check_docker
+  resolve_host_transfer_dirs
   set_vm_max_map_count
   clone_or_update_repo
   run_install_steps

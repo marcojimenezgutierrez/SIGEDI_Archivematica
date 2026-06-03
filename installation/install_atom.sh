@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# AtoM 2.10 development environment for WSL 2 + Docker Desktop.
+# AtoM 2.10 development environment for WSL 2 + Docker Desktop or a native
+# Linux server (e.g. Ubuntu 22.04). The environment is auto-detected.
 #
 # This script follows the official AtoM Docker Compose development workflow:
 # https://www.accesstomemory.org/es/docs/2.10/dev-manual/env/compose/
@@ -9,12 +10,13 @@ set -euo pipefail
 # It is focused on plugin development. The official compose file bind-mounts
 # the full AtoM source tree into the application containers:
 #
-#   Host WSL path:      $ATOM_CLONE_DIR/plugins
+#   Host path:          $ATOM_CLONE_DIR/plugins
 #   Container path:     /atom/src/plugins
 #
-# Work in the host path from WSL, VS Code, or Windows access to WSL files. Do
-# not add a separate bind mount directly over /atom/src/plugins: doing that
-# would hide the native AtoM plugins shipped in the source tree.
+# Work in the host path from your shell, VS Code, or (on WSL) Windows access to
+# the WSL files. Do not add a separate bind mount directly over
+# /atom/src/plugins: doing that would hide the native AtoM plugins shipped in
+# the source tree.
 #
 # Usage:
 #   chmod +x install_atom.sh
@@ -53,9 +55,18 @@ VM_MAX_MAP_COUNT="${VM_MAX_MAP_COUNT:-262144}"
 THEME_SKELETON_REPO="${THEME_SKELETON_REPO:-https://github.com/artefactual-labs/arThemeB5Plugin.git}"
 THEME_SKELETON_NAME="arThemeB5Plugin"
 
-# === Buzón de transferencias para compartir archivos de Archivematica a AtoM (host -> contenedor) ===
-ATOMTOARCHIVEMATICA_HOST_TRANSFER_DIR="${ATOMTOARCHIVEMATICA_HOST_TRANSFER_DIR:-/mnt/c/ArchivematicaDrop/transfer-share}"
+# === Buzón de transferencias compartido entre Archivematica y AtoM (host -> contenedor) ===
+# La ruta del host se resuelve según el entorno en resolve_host_transfer_dirs() y
+# DEBE coincidir con ARCHIVEMATICATOATOM_HOST_TRANSFER_DIR de install_archivematica.sh
+# para que el bind mount conecte ambos stacks:
+#   - WSL 2 + Docker Desktop -> /mnt/c/ArchivematicaDrop/transfer-share
+#   - Servidor Linux nativo  -> $HOME/ArchivematicaDrop/transfer-share
+# Puedes forzarla exportando ATOMTOARCHIVEMATICA_HOST_TRANSFER_DIR (o TRANSFER_BASE_DIR).
+ATOMTOARCHIVEMATICA_HOST_TRANSFER_DIR="${ATOMTOARCHIVEMATICA_HOST_TRANSFER_DIR:-}"
 ATOMTOARCHIVEMATICA_CONTAINER_TRANSFER_DIR="${ATOMTOARCHIVEMATICA_CONTAINER_TRANSFER_DIR:-/home/transfer-share-from-atom}"
+
+# Base común para las rutas del host. DEBE ser idéntica a la usada en install_archivematica.sh.
+TRANSFER_BASE_DIR="${TRANSFER_BASE_DIR:-}"
 
 COMPOSE_FILE_VALUE=""
 
@@ -85,6 +96,23 @@ is_arm() {
     arm64|aarch64) return 0 ;;
     *) return 1 ;;
   esac
+}
+
+# Resuelve la ruta del host del buzón compartido según el entorno. DEBE producir la
+# misma ruta que install_archivematica.sh para que el bind mount conecte ambos stacks:
+#   - WSL 2 + Docker Desktop: la unidad C: de Windows (compartida con ambos stacks)
+#   - Servidor Linux nativo:  un directorio bajo el HOME del usuario
+# Respeta cualquier override por variable de entorno.
+resolve_host_transfer_dirs() {
+  if [ -z "$TRANSFER_BASE_DIR" ]; then
+    if is_wsl && [ -d /mnt/c ]; then
+      TRANSFER_BASE_DIR="/mnt/c/ArchivematicaDrop"
+    else
+      TRANSFER_BASE_DIR="$HOME/ArchivematicaDrop"
+    fi
+  fi
+  ATOMTOARCHIVEMATICA_HOST_TRANSFER_DIR="${ATOMTOARCHIVEMATICA_HOST_TRANSFER_DIR:-$TRANSFER_BASE_DIR/transfer-share}"
+  log "Ruta del host (buzón compartido) -> share: ${ATOMTOARCHIVEMATICA_HOST_TRANSFER_DIR}"
 }
 
 install_apt_packages() {
@@ -536,7 +564,7 @@ Access:
   Password: demo
 
 Plugin development paths:
-  Host WSL path:  $ATOM_CLONE_DIR/plugins
+  Host path:      $ATOM_CLONE_DIR/plugins
   Container path: /atom/src/plugins
 
 Do not bind-mount another host directory over /atom/src/plugins. The official
@@ -563,6 +591,7 @@ EOF
 
 main() {
   check_host
+  resolve_host_transfer_dirs
   set_vm_max_map_count
   clone_or_update_atom
   configure_compose_file
